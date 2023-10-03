@@ -18,6 +18,7 @@ public class ConfigWindow : Window, IDisposable
     // TODO: Refactor. RACE CONDITIONS!
     public static HashSet<Item> WatchList = new();
     private Item? SelectedItem = null;
+    private int IntervalMinutes = Service.Config.TimerInterval;
 
     private ItemPriceFetcher ItemPriceFetcher = new();
 
@@ -43,9 +44,9 @@ public class ConfigWindow : Window, IDisposable
     public override unsafe void Draw()
     {
         ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
-        ImGui.InputTextWithHint("##item-search", "Item Name...", ref this.ItemSearchQuery, 50);
 
-        this.ItemsFiltered = this.Items.Where(item => item.Name.ToString().ToLower().Contains(this.ItemSearchQuery.ToLower())).ToList();
+        if (ImGui.InputTextWithHint("##item-search", "Item Name...", ref this.ItemSearchQuery, 50))
+            this.ItemsFiltered = this.Items.Where(item => item.Name.ToString().ToLower().Contains(this.ItemSearchQuery.ToLower())).ToList();
 
         if (ImGui.BeginListBox("##item-selectlist", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * 5f)))
         {
@@ -96,7 +97,7 @@ public class ConfigWindow : Window, IDisposable
         {
             if (ImGui.Selectable("Fetch Price"))
             {
-                var region = Service.ClientState.LocalPlayer?.HomeWorld.ToString();
+                var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
                 if (region is not null)
                     Task.Run(() => this.ItemPriceFetcher.FetchPrices(this.SelectedItem!.RowId, this.SelectedItem.Name, region));
             }
@@ -115,7 +116,9 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Spacing();
         ImGui.Text("Timer interval:");
 
-        ImGui.SliderInt("Minutes##config-interval", ref Service.Config.TimerInterval, 1, 120);
+        ImGui.SliderInt("Minutes##config-interval", ref this.IntervalMinutes, 1, 120);
+        if (this.ItemPriceFetcher.Interval != this.IntervalMinutes)
+            this.ItemPriceFetcher.Interval = this.IntervalMinutes;
     }
 
     public void Dispose()

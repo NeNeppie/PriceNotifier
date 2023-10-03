@@ -28,12 +28,27 @@ public class ItemPriceFetcher : IDisposable
     private readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
     private readonly Timer? Timer;
 
-    private static TimeSpan Interval => TimeSpan.FromMinutes(Service.Config.TimerInterval); // TODO: Config setting & setter
+    public int Interval
+    {
+        get => Service.Config.TimerInterval;
+        set
+        {
+            Service.Config.TimerInterval = value;
+            if (this.Timer != null)
+            {
+                this.Timer.Interval = value * 60000;
+                this.Timer.Stop();
+                this.Timer.Start();
+            }
+            Service.Config.Save();
+        }
+    }
+
     public bool IsActive => this.Timer != null;
 
     public ItemPriceFetcher()
     {
-        this.Timer = new Timer(Interval);
+        this.Timer = new Timer(this.Interval * 60000);
         this.Timer.Elapsed += this.FetchPricesAll;
         this.Timer.AutoReset = true;
         this.Timer.Start();
@@ -45,12 +60,14 @@ public class ItemPriceFetcher : IDisposable
 
         foreach (var item in ConfigWindow.WatchList)
         {
-            taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
+            //taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
+            taskList.Add(this.DebugFetch());
         }
         Task.WaitAll(taskList.ToArray());
     }
 
     // TODO: Put guards, checks, and all that other stuff. Wrap function in try clause, JsonSerializer seems to act up rarely.
+    //       Better handling of logging and printing to chat, plus item linking
     public async Task FetchPrices(uint itemID, string itemName, string region)
     {
         var url = $"https://universalis.app/api/v2/{region}/{itemID}?fields=listings.pricePerUnit,listings.hq,listings.retainerName"; // TEMP:
@@ -73,6 +90,12 @@ public class ItemPriceFetcher : IDisposable
 
             Service.ChatGui.PrintChat(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
         }
+    }
+
+    private Task DebugFetch()
+    {
+        PluginLog.Debug("Beep!");
+        return Task.CompletedTask;
     }
 
     public void Dispose()
