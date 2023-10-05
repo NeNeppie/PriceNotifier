@@ -4,7 +4,6 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 
@@ -37,7 +36,7 @@ public class ConfigWindow : Window, IDisposable
 
         this.Items = Service.DataManager.GetExcelSheet<Item>()!
             .Where(item => item.ItemSearchCategory.Row != 0).ToList();
-        PluginLog.Debug($"Number of items loaded: {this.Items.Count}");
+        Service.PluginLog.Debug($"Number of items loaded: {this.Items.Count}");
         this.ItemsFiltered = this.Items;
     }
 

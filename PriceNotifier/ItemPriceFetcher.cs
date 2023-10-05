@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Timers;
-using Dalamud.Logging;
 
 using PriceNotifier.UI;
 
@@ -80,7 +79,7 @@ public class ItemPriceFetcher : IDisposable
 
         foreach (var listing in query.listings)
         {
-            PluginLog.Debug($"{listing.pricePerUnit} by {listing.retainerName}"); // DEBUG:
+            Service.PluginLog.Debug($"{listing.pricePerUnit} by {listing.retainerName}"); // DEBUG:
             if (retainers.Contains(listing.retainerName))
                 break;
 
@@ -88,13 +87,13 @@ public class ItemPriceFetcher : IDisposable
             if (listing.hq)
                 chatMessage += " (HQ)";
 
-            Service.ChatGui.PrintChat(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+            Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
         }
     }
 
     private Task DebugFetch()
     {
-        PluginLog.Debug("Beep!");
+        Service.PluginLog.Debug("Beep!");
         return Task.CompletedTask;
     }
 

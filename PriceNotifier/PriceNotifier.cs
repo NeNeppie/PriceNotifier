@@ -1,8 +1,7 @@
-﻿using Dalamud.Game;
-using Dalamud.Game.Command;
+﻿using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-
+using Dalamud.Plugin.Services;
 using PriceNotifier.UI;
 
 namespace PriceNotifier;
@@ -51,13 +50,12 @@ public sealed class Plugin : IDalamudPlugin
         this.WindowSystem.Draw();
     }
 
-    public unsafe void InitializeFetcher(Framework framework)
+    /*public unsafe void InitializeFetcher(IFramework framework)
     {
-        //if (ItemPriceFetcher.IsActive || !Service.ClientState.IsLoggedIn) { return; }
+        if (ItemPriceFetcher.IsActive || !Service.ClientState.IsLoggedIn) { return; }
 
-        //this.ItemPriceFetcher = new();
-
-        /*
+        this.ItemPriceFetcher = new();
+        
         var addon = (AtkUnitBase*)Service.GameGui.GetAddonByName("RetainerSellList");
         if (addon is null || !addon->IsVisible)
         {
@@ -86,7 +84,7 @@ public sealed class Plugin : IDalamudPlugin
                 //      * Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic
             }
             this.isActive = true;
-        } */
-    }
+        }
+    } */
 }
 
