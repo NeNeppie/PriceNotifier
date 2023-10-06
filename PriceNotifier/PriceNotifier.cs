@@ -1,7 +1,12 @@
-﻿using Dalamud.Game.Command;
+﻿using System.Linq;
+using Dalamud.Game.Addon.Lifecycle;
+using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
+using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
+using Dalamud.Memory;
 using Dalamud.Plugin;
-using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Excel.GeneratedSheets;
 using PriceNotifier.UI;
 
 namespace PriceNotifier;
@@ -27,6 +32,8 @@ public sealed class Plugin : IDalamudPlugin
 
         Service.PluginInterface.UiBuilder.Draw += this.DrawUI;
 
+        Service.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "RetainerSellList", this.FunkyFunc);
+
         //Service.Framework.Update += this.InitializeFetcher;
     }
 
@@ -34,6 +41,8 @@ public sealed class Plugin : IDalamudPlugin
     {
         this.ConfigWindow.Dispose();
         this.WindowSystem.RemoveAllWindows();
+
+        Service.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "RetainerSellList", this.FunkyFunc);
 
         //Service.Framework.Update -= this.InitializeFetcher;
 
@@ -50,41 +59,34 @@ public sealed class Plugin : IDalamudPlugin
         this.WindowSystem.Draw();
     }
 
-    /*public unsafe void InitializeFetcher(IFramework framework)
+    // TODO: Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic
+    public unsafe void FunkyFunc(AddonEvent eventtype, AddonArgs addoninfo)
     {
-        if (ItemPriceFetcher.IsActive || !Service.ClientState.IsLoggedIn) { return; }
+        var addon = (AtkUnitBase*)addoninfo.Addon;
+        if (addon is null || !addon->IsVisible) { return; }
 
-        this.ItemPriceFetcher = new();
-        
-        var addon = (AtkUnitBase*)Service.GameGui.GetAddonByName("RetainerSellList");
-        if (addon is null || !addon->IsVisible)
-        {
-            this.isActive = false;
-            return;
-        }
+        var items = Service.DataManager.GetExcelSheet<Item>()!.ToList();
 
-        if (!this.isActive)
+        var countString = MemoryHelper.ReadSeStringNullTerminated(new nint(addon->AtkValues[0].String)).TextValue;
+        var count = int.Parse(countString.Split('/')[0]);
+        for (int i = 0; i < count; i++)
         {
-            var itemsString = MemoryHelper.ReadSeStringNullTerminated(new nint(addon->AtkValues[0].String)).TextValue;
-            var items = int.Parse(itemsString.Split('/')[0]);
-            for (int i = 0; i < items; i++)
+            int atkIndex = (i + 1) * 10;
+            var itemIcon = addon->AtkValues[atkIndex].Int;
+            var itemName = MemoryHelper.ReadSeStringNullTerminated(new nint(addon->AtkValues[atkIndex + 1].String)).TextValue;
+            Service.PluginLog.Debug($"{itemIcon} {itemName}");
+
+            // HQ Check. Collectables are 500,000. Needs checking?
+            if (itemIcon > 1000000)
             {
-                int atkIndex = (i + 1) * 10;
-                var itemIconId = addon->AtkValues[atkIndex].Int;
-                var itemName = MemoryHelper.ReadSeStringNullTerminated(new nint(addon->AtkValues[atkIndex + 1].String)).TextValue;
-                PluginLog.Debug($"{itemIconId} {itemName}");
-
-                // HQ Check. Collectables are 500,000. Needs checking?
-                if (itemIconId > 1000000)
-                    itemIconId -= 1000000;
-
-                //Service.DataManager.Excel.GetSheet<Item>()?.GetRow();
-                // TODO: this addon doesn't store item IDs. Alternatives to storing info on items being sold:
-                //      * Manually, via a config window (Better to start with this)
-                //      * Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic
+                itemName = itemName.Remove(itemName.Length - 2);
+                itemIcon -= 1000000;
             }
-            this.isActive = true;
+
+            var item = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).ToList();
+            if (item.Any())
+                ConfigWindow.WatchList.Add(item[0]);
         }
-    } */
+    }
 }
 

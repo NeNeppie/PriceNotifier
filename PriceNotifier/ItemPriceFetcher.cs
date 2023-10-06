@@ -35,7 +35,7 @@ public class ItemPriceFetcher : IDisposable
             Service.Config.TimerInterval = value;
             if (this.Timer != null)
             {
-                this.Timer.Interval = value * 60000;
+                this.Timer.Interval = value * 60000; // FIXME: 0 check
                 this.Timer.Stop();
                 this.Timer.Start();
             }
@@ -60,7 +60,7 @@ public class ItemPriceFetcher : IDisposable
         foreach (var item in ConfigWindow.WatchList)
         {
             //taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
-            taskList.Add(this.DebugFetch());
+            taskList.Add(this.DebugFetch(item.Name.RawString));
         }
         Task.WaitAll(taskList.ToArray());
     }
@@ -91,9 +91,9 @@ public class ItemPriceFetcher : IDisposable
         }
     }
 
-    private Task DebugFetch()
+    private Task DebugFetch(string itemName)
     {
-        Service.PluginLog.Debug("Beep!");
+        Service.PluginLog.Debug($"Beep! {itemName}");
         return Task.CompletedTask;
     }
 

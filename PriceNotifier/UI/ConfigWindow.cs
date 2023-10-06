@@ -115,6 +115,7 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Spacing();
         ImGui.Text("Timer interval:");
 
+        // FIXME: Performance
         ImGui.SliderInt("Minutes##config-interval", ref this.IntervalMinutes, 1, 120);
         if (this.ItemPriceFetcher.Interval != this.IntervalMinutes)
             this.ItemPriceFetcher.Interval = this.IntervalMinutes;
