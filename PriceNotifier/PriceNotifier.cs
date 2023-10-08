@@ -39,6 +39,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        Service.Config.Save();
         this.ConfigWindow.Dispose();
         this.WindowSystem.RemoveAllWindows();
 
@@ -74,6 +75,7 @@ public sealed class Plugin : IDalamudPlugin
             int atkIndex = (i + 1) * 10;
             var itemIcon = addon->AtkValues[atkIndex].Int;
             var itemName = MemoryHelper.ReadSeStringNullTerminated(new nint(addon->AtkValues[atkIndex + 1].String)).TextValue;
+            // price per item -> atkIndex + 3
             Service.PluginLog.Debug($"{itemIcon} {itemName}");
 
             // HQ Check. Collectables are 500,000. Needs checking?

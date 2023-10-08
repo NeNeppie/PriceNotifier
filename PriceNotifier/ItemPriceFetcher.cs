@@ -35,11 +35,10 @@ public class ItemPriceFetcher : IDisposable
             Service.Config.TimerInterval = value;
             if (this.Timer != null)
             {
-                this.Timer.Interval = value * 60000; // FIXME: 0 check
-                this.Timer.Stop();
-                this.Timer.Start();
+                var interval = value * 60000;
+                if (interval > 0)
+                    this.Timer.Interval = interval;
             }
-            Service.Config.Save();
         }
     }
 
@@ -47,6 +46,9 @@ public class ItemPriceFetcher : IDisposable
 
     public ItemPriceFetcher()
     {
+        if (this.Interval <= 0)
+            this.Interval = 30;
+
         this.Timer = new Timer(this.Interval * 60000);
         this.Timer.Elapsed += this.FetchPricesAll;
         this.Timer.AutoReset = true;
