@@ -14,16 +14,16 @@ namespace PriceNotifier
         public HashSet<uint> ItemIDs = new();
 
         [NonSerialized]
-        private DalamudPluginInterface? PluginInterface;
+        private DalamudPluginInterface? _pluginInterface;
 
         public void Initialize(DalamudPluginInterface pluginInterface)
         {
-            this.PluginInterface = pluginInterface;
+            _pluginInterface = pluginInterface;
         }
 
         public void Save()
         {
-            this.PluginInterface!.SavePluginConfig(this);
+            _pluginInterface!.SavePluginConfig(this);
         }
     }
 }

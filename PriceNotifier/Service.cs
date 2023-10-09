@@ -1,3 +1,4 @@
+using System;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -17,10 +18,22 @@ internal sealed class Service
     [PluginService] public static IAddonLifecycle AddonLifecycle { get; private set; } = null!;
 
     public static Configuration Config { get; set; } = null!;
+    public static ItemPriceFetcher ItemPriceFetcher { get; set; } = null!;
+    public static ItemWatchlist ItemWatchlist { get; set; } = null!;
 
     public static void Initialize(DalamudPluginInterface pi)
     {
         Config = (Configuration?)pi.GetPluginConfig() ?? new Configuration();
         Config.Initialize(pi);
+
+        ItemWatchlist = new();
+        ItemPriceFetcher = new();
+    }
+
+    public static void Dispose()
+    {
+        ItemPriceFetcher.Dispose();
+        ItemWatchlist.Dispose();
+        Config.Save();
     }
 }

@@ -6,8 +6,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Timers;
 
-using PriceNotifier.UI;
-
 namespace PriceNotifier;
 
 public class Query
@@ -24,8 +22,8 @@ public class Query
 
 public class ItemPriceFetcher : IDisposable
 {
-    private readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(15) };
-    private readonly Timer? Timer;
+    private readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(15) };
+    private readonly Timer? _timer;
 
     public int Interval
     {
@@ -33,48 +31,50 @@ public class ItemPriceFetcher : IDisposable
         set
         {
             Service.Config.TimerInterval = value;
-            if (this.Timer != null)
+            if (_timer != null)
             {
                 var interval = value * 60000;
                 if (interval > 0)
-                    this.Timer.Interval = interval;
+                    _timer.Interval = interval;
             }
         }
     }
 
-    public bool IsActive => this.Timer != null;
+    public bool IsActive => _timer != null;
 
     public ItemPriceFetcher()
     {
         if (this.Interval <= 0)
             this.Interval = 30;
 
-        this.Timer = new Timer(this.Interval * 60000);
-        this.Timer.Elapsed += this.FetchPricesAll;
-        this.Timer.AutoReset = true;
-        this.Timer.Start();
+        _timer = new Timer(this.Interval * 60000);
+        _timer.Elapsed += this.FetchPricesAll;
+        _timer.AutoReset = true;
+        _timer.Start();
     }
 
     private void FetchPricesAll(object? s, ElapsedEventArgs e)
     {
         var taskList = new List<Task>();
 
-        foreach (var item in ConfigWindow.WatchList)
+        foreach (var entry in Service.ItemWatchlist.Entries)
         {
             //taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
-            taskList.Add(this.DebugFetch(item.Name.RawString));
+            taskList.Add(DebugFetch(entry.Item.Name.RawString));
         }
         Task.WaitAll(taskList.ToArray());
     }
 
     // TODO: Put guards, checks, and all that other stuff. Wrap function in try clause, JsonSerializer seems to act up rarely.
     //       Better handling of logging and printing to chat, plus item linking
-    public async Task FetchPrices(uint itemID, string itemName, string region)
+    //       Multple fetches per api request, see PriceInsight and Universalis doc
+    //       Calculate tax / fetch without tax? Make this a config setting eventually 
+    public async Task FetchPricesAsync(uint itemID, string itemName, string region)
     {
         var url = $"https://universalis.app/api/v2/{region}/{itemID}?fields=listings.pricePerUnit,listings.hq,listings.retainerName"; // TEMP:
         string[] retainers = { "Transmongold", "Sebastibun" };  // TEMP:
 
-        var response = await this.Client.GetAsync(url);
+        var response = await _client.GetAsync(url);
         var responseStream = await response.Content.ReadAsStreamAsync();
         var query = await JsonSerializer.DeserializeAsync<Query>(responseStream)
             ?? throw new HttpRequestException("Well shit");
@@ -93,7 +93,7 @@ public class ItemPriceFetcher : IDisposable
         }
     }
 
-    private Task DebugFetch(string itemName)
+    private static Task DebugFetch(string itemName)
     {
         Service.PluginLog.Debug($"Beep! {itemName}");
         return Task.CompletedTask;
@@ -101,11 +101,11 @@ public class ItemPriceFetcher : IDisposable
 
     public void Dispose()
     {
-        if (this.Timer != null)
+        if (_timer != null)
         {
-            this.Timer.Stop();
-            this.Timer.Elapsed -= this.FetchPricesAll;
-            this.Timer.Dispose();
+            _timer.Stop();
+            _timer.Elapsed -= this.FetchPricesAll;
+            _timer.Dispose();
         }
     }
 }

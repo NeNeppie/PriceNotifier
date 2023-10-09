@@ -9,17 +9,14 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace PriceNotifier.UI;
 
-public class ConfigWindow : Window, IDisposable
+public class ConfigWindow : Window
 {
-    private string ItemSearchQuery = "";
-    private readonly List<Item> Items;
-    private List<Item> ItemsFiltered;
-    // TODO: Refactor. RACE CONDITIONS!
-    public static HashSet<Item> WatchList = new();
-    private Item? SelectedItem = null;
-    private int IntervalMinutes = Service.Config.TimerInterval;
+    private readonly List<Item> _items;
 
-    private ItemPriceFetcher ItemPriceFetcher = new();
+    private string _itemSearchQuery = "";
+    private List<Item> _itemsFiltered;
+    private WatchlistEntry _selectedEntry = new(new(), 0, false);
+    private int _intervalMinutes = Service.Config.TimerInterval;
 
     public ConfigWindow() : base("PriceNotifier##config")
     {
@@ -32,35 +29,33 @@ public class ConfigWindow : Window, IDisposable
             MaximumSize = new(500, 500)
         };
 
-        var itemsheet = Service.DataManager.GetExcelSheet<Item>();
-
-        this.Items = Service.DataManager.GetExcelSheet<Item>()!
+        _items = Service.DataManager.GetExcelSheet<Item>()!
             .Where(item => item.ItemSearchCategory.Row != 0).ToList();
-        Service.PluginLog.Debug($"Number of items loaded: {this.Items.Count}");
-        this.ItemsFiltered = this.Items;
+        Service.PluginLog.Debug($"Number of items loaded: {_items.Count}");
+        _itemsFiltered = _items;
     }
 
     public override unsafe void Draw()
     {
         ImGui.PushItemWidth(ImGui.GetContentRegionAvail().X);
 
-        if (ImGui.InputTextWithHint("##item-search", "Item Name...", ref this.ItemSearchQuery, 50))
-            this.ItemsFiltered = this.Items.Where(item => item.Name.ToString().ToLower().Contains(this.ItemSearchQuery.ToLower())).ToList();
+        if (ImGui.InputTextWithHint("##item-search", "Item Name...", ref _itemSearchQuery, 50))
+            _itemsFiltered = _items.Where(item => item.Name.ToString().ToLower().Contains(_itemSearchQuery.ToLower())).ToList();
 
         if (ImGui.BeginListBox("##item-selectlist", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * 5f)))
         {
             var clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
-            clipper.Begin(this.ItemsFiltered.Count);
+            clipper.Begin(_itemsFiltered.Count);
             while (clipper.Step())
             {
                 for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
                 {
-                    var item = this.ItemsFiltered[i];
+                    var item = _itemsFiltered[i];
                     if (ImGui.Selectable($"{item.Name}"))
                     {
-                        lock (WatchList)
+                        lock (Service.ItemWatchlist)
                         {
-                            WatchList.Add(item);
+                            Service.ItemWatchlist.Entries.Add(new(item, 0, false));
                         }
                     }
                 }
@@ -75,11 +70,11 @@ public class ConfigWindow : Window, IDisposable
         bool openPopup = false;
         if (ImGui.BeginListBox("##item-watchlist", new Vector2(0, ImGui.GetTextLineHeightWithSpacing() * 5f)))
         {
-            foreach (var item in WatchList.Reverse())
+            foreach (var entry in Service.ItemWatchlist.Entries.Reverse())
             {
-                if (ImGui.Selectable(item.Name))
+                if (ImGui.Selectable(entry.Item.Name))
                 {
-                    this.SelectedItem = item;
+                    _selectedEntry = entry;
                     openPopup = true;
                 }
             }
@@ -98,14 +93,14 @@ public class ConfigWindow : Window, IDisposable
             {
                 var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
                 if (region is not null)
-                    Task.Run(() => this.ItemPriceFetcher.FetchPrices(this.SelectedItem!.RowId, this.SelectedItem.Name, region));
+                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(_selectedEntry.Item.RowId, _selectedEntry.Item.Name, region));
             }
 
             if (ImGui.Selectable("Remove From Watchlist"))
             {
-                lock (WatchList)
+                lock (Service.ItemWatchlist.Entries)
                 {
-                    WatchList.Remove(this.SelectedItem!);
+                    Service.ItemWatchlist.Entries.Remove(_selectedEntry);
                 }
             }
 
@@ -115,13 +110,8 @@ public class ConfigWindow : Window, IDisposable
         ImGui.Spacing();
         ImGui.Text("Timer interval:");
 
-        ImGui.SliderInt("Minutes##config-interval", ref this.IntervalMinutes, 1, 120, null, ImGuiSliderFlags.NoInput);
-        if (this.ItemPriceFetcher.Interval != this.IntervalMinutes)
-            this.ItemPriceFetcher.Interval = this.IntervalMinutes;
-    }
-
-    public void Dispose()
-    {
-        this.ItemPriceFetcher.Dispose();
+        ImGui.SliderInt("Minutes##config-interval", ref _intervalMinutes, 1, 120, null, ImGuiSliderFlags.NoInput);
+        if (Service.ItemPriceFetcher.Interval != _intervalMinutes)
+            Service.ItemPriceFetcher.Interval = _intervalMinutes;
     }
 }
