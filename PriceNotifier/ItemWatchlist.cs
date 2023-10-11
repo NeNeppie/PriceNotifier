@@ -8,17 +8,17 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace PriceNotifier;
 
-public record WatchlistEntry(Item item, int Price, bool IsHQ)
+public record WatchlistEntry(Item Item, int Price, bool HQ)
 {
-    public Item Item { get; init; } = item;
     public int Price { get; set; } = Price;
-    public bool HQ { get; set; } = IsHQ;
+    public bool HQ { get; set; } = HQ;
 }
 
 // TODO: Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic
 public class ItemWatchlist
 {
     // Icon?    Name    Price(1)[ 0xE049]    HQ(w/ the name?)[ 0xE03C]
+    // TODO: Change to a item-id-keyed dictionary
     public HashSet<WatchlistEntry> Entries = new();
 
     public ItemWatchlist()
@@ -28,6 +28,7 @@ public class ItemWatchlist
 
     private static int ParseItemPrice(string itemPriceString) => int.Parse(itemPriceString.Remove(itemPriceString.Length - 1).Replace(",", ""));
 
+    // TODO: Item duplicates
     public unsafe void GetRetainerSellList(AddonEvent eventtype, AddonArgs addoninfo)
     {
         var addon = (AtkUnitBase*)addoninfo.Addon;
@@ -46,7 +47,7 @@ public class ItemWatchlist
             var itemPrice = ParseItemPrice(MemoryHelper.ReadSeStringNullTerminated((nint)addon->AtkValues[atkIndex + 3].String).TextValue);
             var isHQ = itemIcon > 1000000;
 
-            Service.PluginLog.Debug($"{itemIcon} {itemName} {itemPrice}\xE049");
+            Service.PluginLog.Debug($"{itemIcon} {itemName} {itemPrice}\xE049"); // TEMP:
 
             // HQ Check. Collectables are 500,000.
             if (isHQ)
