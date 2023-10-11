@@ -15,7 +15,7 @@ public class ConfigWindow : Window
 
     private string _itemSearchQuery = "";
     private List<Item> _itemsFiltered;
-    private WatchlistEntry _selectedEntry = new(new(), 0, false);
+    private uint _selectedEntryID = 0;
     private int _intervalMinutes = Service.Config.TimerInterval;
 
     private static Vector2 _iconSize => new(ImGui.GetTextLineHeight() * 1.5f);
@@ -57,7 +57,8 @@ public class ConfigWindow : Window
                     {
                         lock (Service.ItemWatchlist)
                         {
-                            Service.ItemWatchlist.Entries.Add(new(item, 0, false));
+                            if (!Service.ItemWatchlist.Entries.TryGetValue(item.RowId, out _))
+                                Service.ItemWatchlist.Entries.Add(item.RowId, new(item, 0, false));
                         }
                     }
                 }
@@ -81,33 +82,33 @@ public class ConfigWindow : Window
             foreach (var entry in Service.ItemWatchlist.Entries.Reverse())
             {
                 ImGui.TableNextRow();
+                var value = entry.Value;
 
                 // Icon Column
                 ImGui.TableNextColumn();
-                DrawIcon(entry.Item, entry.HQ);
+                DrawIcon(value.Item, value.HQ);
 
                 // Name Column
                 ImGui.TableNextColumn();
-                if (ImGui.Selectable(entry.Item.Name))
+                if (ImGui.Selectable(value.Item.Name))
                 {
-                    _selectedEntry = entry;
+                    _selectedEntryID = entry.Key;
                     openPopup = true;
                 }
 
                 // Price Column
                 ImGui.TableNextColumn();
-                var priceTag = entry.Price;
-                if (ImGui.InputInt($"##item-watchlist-price-rename-{entry.Item.RowId}", ref priceTag, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
+                var priceTag = value.Price;
+                if (ImGui.InputInt($"##item-watchlist-price-rename-{entry.Key}", ref priceTag, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
                 {
-                    // FIXME: I don't even know
-                    entry.Price = priceTag;
+                    value.Price = priceTag;
                 }
                 ImGui.SameLine();
                 ImGui.Text("\xE049");
 
                 // HQ Column
                 ImGui.TableNextColumn();
-                ImGui.Text($"{entry.HQ}");
+                ImGui.Text($"{value.HQ}");
             }
 
             ImGui.EndTable();
@@ -125,15 +126,16 @@ public class ConfigWindow : Window
             {
                 var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
                 if (region is not null)
-                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(_selectedEntry.Item.RowId, _selectedEntry.Item.Name, region));
+                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(_selectedEntryID, region));
             }
 
             if (ImGui.Selectable("Remove From Watchlist"))
             {
                 lock (Service.ItemWatchlist.Entries)
                 {
-                    Service.ItemWatchlist.Entries.Remove(_selectedEntry);
+                    Service.ItemWatchlist.Entries.Remove(_selectedEntryID);
                 }
+                _selectedEntryID = 0;
             }
 
             ImGui.EndPopup();

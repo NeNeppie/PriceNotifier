@@ -57,7 +57,7 @@ public class ItemPriceFetcher : IDisposable
     {
         var taskList = new List<Task>();
 
-        foreach (var entry in Service.ItemWatchlist.Entries)
+        foreach (var entry in Service.ItemWatchlist.Entries.Values)
         {
             //taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
             taskList.Add(DebugFetch(entry.Item.Name.RawString));
@@ -69,7 +69,7 @@ public class ItemPriceFetcher : IDisposable
     //       Better handling of logging and printing to chat, plus item linking
     //       Multple fetches per api request, see PriceInsight and Universalis doc
     //       Calculate tax / fetch without tax? Make this a config setting eventually 
-    public async Task FetchPricesAsync(uint itemID, string itemName, string region)
+    public async Task FetchPricesAsync(uint itemID, string region, string itemName = "")
     {
         var url = $"https://universalis.app/api/v2/{region}/{itemID}?fields=listings.pricePerUnit,listings.hq,listings.retainerName"; // TEMP:
         string[] retainers = { "Transmongold", "Sebastibun" };  // TEMP:

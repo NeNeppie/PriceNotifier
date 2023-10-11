@@ -18,8 +18,7 @@ public record WatchlistEntry(Item Item, int Price, bool HQ)
 public class ItemWatchlist
 {
     // Icon?    Name    Price(1)[ 0xE049]    HQ(w/ the name?)[ 0xE03C]
-    // TODO: Change to a item-id-keyed dictionary
-    public HashSet<WatchlistEntry> Entries = new();
+    public Dictionary<uint, WatchlistEntry> Entries = new();
 
     public ItemWatchlist()
     {
@@ -56,11 +55,12 @@ public class ItemWatchlist
                 itemIcon -= 1000000;
             }
 
-            var item = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).ToList();
-            if (item.Any())
-            {
-                this.Entries.Add(new(item[0], itemPrice, isHQ));
-            }
+            var itemList = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).ToList();
+            if (!itemList.Any()) { continue; }
+
+            var item = itemList[0]; // First match
+            if (!this.Entries.TryGetValue(item.RowId, out _))
+                this.Entries.Add(item.RowId, new(item, itemPrice, isHQ));
         }
     }
 
