@@ -46,8 +46,6 @@ public class ItemWatchlist
             var itemPrice = ParseItemPrice(MemoryHelper.ReadSeStringNullTerminated((nint)addon->AtkValues[atkIndex + 3].String).TextValue);
             var isHQ = itemIcon > 1000000;
 
-            Service.PluginLog.Debug($"{itemIcon} {itemName} {itemPrice}\xE049"); // TEMP:
-
             // HQ Check. Collectables are 500,000.
             if (isHQ)
             {

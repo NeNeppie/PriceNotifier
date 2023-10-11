@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -24,6 +23,8 @@ public class ItemPriceFetcher : IDisposable
 {
     private readonly HttpClient _client = new() { Timeout = TimeSpan.FromSeconds(15) };
     private readonly Timer? _timer;
+
+    private const string _universalisFields = "listings.pricePerUnit,listings.hq,listings.retainerName";
 
     public int Interval
     {
@@ -65,31 +66,43 @@ public class ItemPriceFetcher : IDisposable
         Task.WaitAll(taskList.ToArray());
     }
 
-    // TODO: Put guards, checks, and all that other stuff. Wrap function in try clause, JsonSerializer seems to act up rarely.
-    //       Better handling of logging and printing to chat, plus item linking
-    //       Multple fetches per api request, see PriceInsight and Universalis doc
-    //       Calculate tax / fetch without tax? Make this a config setting eventually 
-    public async Task FetchPricesAsync(uint itemID, string region, string itemName = "")
+    // TODO: Better chat printing, plus item linking. Player-made chat notification?
+    //       Multple fetches per api request, see PriceInsight and Universalis doc.
+    public async Task FetchPricesAsync(WatchlistEntry entry, string region, bool ignoreTax = false, bool sameQuality = false)
     {
-        var url = $"https://universalis.app/api/v2/{region}/{itemID}?fields=listings.pricePerUnit,listings.hq,listings.retainerName"; // TEMP:
-        string[] retainers = { "Transmongold", "Sebastibun" };  // TEMP:
-
-        var response = await _client.GetAsync(url);
-        var responseStream = await response.Content.ReadAsStreamAsync();
-        var query = await JsonSerializer.DeserializeAsync<Query>(responseStream)
-            ?? throw new HttpRequestException("Well shit");
-
-        foreach (var listing in query.listings)
+        var url = $"https://universalis.app/api/v2/{region}/{entry.Item.RowId}?noGst={ignoreTax}&fields={_universalisFields}";
+        try
         {
-            Service.PluginLog.Debug($"{listing.pricePerUnit} by {listing.retainerName}"); // DEBUG:
-            if (retainers.Contains(listing.retainerName))
-                break;
+            var response = await _client.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException($"Unsuccessful status code: {response.StatusCode}", null, response.StatusCode);
 
-            var chatMessage = $"[PriceNotifier] Found a lower price for '{itemName}' - {listing.pricePerUnit} by {listing.retainerName}";
-            if (listing.hq)
-                chatMessage += " (HQ)";
+            var responseStream = await response.Content.ReadAsStreamAsync();
+            var query = await JsonSerializer.DeserializeAsync<Query>(responseStream)
+                ?? throw new HttpRequestException("Returned null response");
 
-            Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+            Query.Listing? cheapestListing = null;
+            foreach (var listing in query.listings)
+            {
+                if (listing.pricePerUnit >= entry.Price && entry.Price != 0)
+                    break;
+
+                if (sameQuality && listing.hq != entry.HQ)
+                    continue;
+
+                if (cheapestListing is null || listing.pricePerUnit < cheapestListing.pricePerUnit)
+                    cheapestListing = listing;
+            }
+            if (cheapestListing is not null)
+            {
+                var chatMessage = $"[PriceNotifier] Found lower price for '{entry.Item.Name}{(cheapestListing.hq ? " \xE03C" : "")}'" +
+                                  $" - {cheapestListing.pricePerUnit}\xE049 by {cheapestListing.retainerName}";
+                Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+            }
+        }
+        catch (Exception e)
+        {
+            Service.PluginLog.Error(e, $"Couldn't retrieve data for '{entry.Item.Name}' (id {entry.Item.RowId}) at region {region}");
         }
     }
 

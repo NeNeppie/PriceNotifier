@@ -125,8 +125,8 @@ public class ConfigWindow : Window
             if (ImGui.Selectable("Fetch Price"))
             {
                 var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
-                if (region is not null)
-                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(_selectedEntryID, region));
+                if (region is not null && Service.ItemWatchlist.Entries.TryGetValue(_selectedEntryID, out var entry))
+                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(entry, region, true, true));
             }
 
             if (ImGui.Selectable("Remove From Watchlist"))
