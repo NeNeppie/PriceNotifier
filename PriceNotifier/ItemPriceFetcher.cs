@@ -41,7 +41,7 @@ public class ItemPriceFetcher : IDisposable
         }
     }
 
-    public bool IsActive => _timer != null;
+    public bool IsActive => _timer != null && _timer.Enabled;
 
     public ItemPriceFetcher()
     {
@@ -60,7 +60,7 @@ public class ItemPriceFetcher : IDisposable
 
         foreach (var entry in Service.ItemWatchlist.Entries.Values)
         {
-            //taskList.Add(this.FetchPrices(item.RowId, item.Name, "Phoenix")); // TEMP:
+            //taskList.Add(this.FetchPricesAsync(entry, "Phoenix", true, true));
             taskList.Add(DebugFetch(entry.Item.Name.RawString));
         }
         Task.WaitAll(taskList.ToArray());
@@ -110,6 +110,15 @@ public class ItemPriceFetcher : IDisposable
     {
         Service.PluginLog.Debug($"Beep! {itemName}");
         return Task.CompletedTask;
+    }
+
+    public void ToggleTimer()
+    {
+        if (_timer != null)
+        {
+            _timer.Enabled ^= true;
+            Service.PluginLog.Info($"Periodic item fetching set to '{_timer.Enabled}'");
+        }
     }
 
     public void Dispose()
