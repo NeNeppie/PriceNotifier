@@ -10,14 +10,13 @@ namespace PriceNotifier;
 
 public record WatchlistEntry(Item Item, int Price, bool HQ)
 {
-    public int Price { get; set; } = Price;
-    public bool HQ { get; set; } = HQ;
+    public int Price { get; set; } = Price; //  0xE049
+    public bool HQ { get; set; } = HQ;      //  0xE03C
 }
 
 // TODO: Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic
 public class ItemWatchlist
 {
-    // Icon?    Name    Price(1)[ 0xE049]    HQ(w/ the name?)[ 0xE03C]
     public Dictionary<uint, WatchlistEntry> Entries = new();
 
     public ItemWatchlist()
@@ -27,7 +26,6 @@ public class ItemWatchlist
 
     private static int ParseItemPrice(string itemPriceString) => int.Parse(itemPriceString.Remove(itemPriceString.Length - 1).Replace(",", ""));
 
-    // TODO: Item duplicates
     public unsafe void GetRetainerSellList(AddonEvent eventtype, AddonArgs addoninfo)
     {
         var addon = (AtkUnitBase*)addoninfo.Addon;

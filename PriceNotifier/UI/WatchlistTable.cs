@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 
@@ -13,7 +14,7 @@ internal static class WatchlistTable
 
     private static void DrawTableHeader()
     {
-        ImGui.TableSetupColumn("Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
+        ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 100f); // Not consistent, but what can you do about it.
         ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 100f);
         ImGui.TableSetupColumn("HQ", ImGuiTableColumnFlags.WidthStretch, 100f);
@@ -62,6 +63,10 @@ internal static class WatchlistTable
             DrawItemPopup(value, entry.Key);
         }
 
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        DrawNewPopup();
+
         ImGui.EndTable();
     }
 
@@ -70,15 +75,11 @@ internal static class WatchlistTable
         var openPopup = false;
         ImGui.Selectable("", false, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, ImGui.GetTextLineHeight() * 1.5f));
         if (ImGui.IsItemClicked())
-        {
             openPopup = true;
-        }
         if (openPopup)
-        {
-            ImGui.OpenPopup($"##item-watchlist-popup-{id}");
-        }
+            ImGui.OpenPopup($"##watchlist-item-popup-{id}");
 
-        if (ImGui.BeginPopup($"##item-watchlist-popup-{id}"))
+        if (ImGui.BeginPopup($"##watchlist-item-popup-{id}"))
         {
             if (ImGui.Selectable("Fetch Price"))
             {
@@ -98,6 +99,35 @@ internal static class WatchlistTable
 
             ImGui.EndPopup();
         }
+    }
+
+    private static void DrawNewPopup()
+    {
+        var openPopup = false;
+        var popupLabel = "##watchlist-new-popup";
+
+        if (IconButton(FontAwesomeIcon.Plus, new Vector2(_iconSize), "Add items"))
+            openPopup = true;
+        if (openPopup)
+            ImGui.OpenPopup(popupLabel);
+
+        WatchlistNewPopup.Draw(popupLabel);
+    }
+
+    public static bool IconButton(FontAwesomeIcon icon, Vector2 size = default, string? tooltip = null)
+    {
+        var label = icon.ToIconString();
+
+        ImGui.PushFont(UiBuilder.IconFont);
+        var res = ImGui.Button(label, size);
+        ImGui.PopFont();
+
+        if (tooltip != null && ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(tooltip);
+        }
+
+        return res;
     }
 
     public static void DrawIcon(Item item, bool isHQ, Vector2 size)
