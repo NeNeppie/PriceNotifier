@@ -14,6 +14,7 @@ internal static class WatchlistTable
 
     private static void DrawTableHeader()
     {
+        ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
         ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 100f); // Not consistent, but what can you do about it.
         ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 100f);
@@ -84,9 +85,14 @@ internal static class WatchlistTable
             if (ImGui.Selectable("Fetch Price"))
             {
                 var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
-                if (region is not null)
-                    // TODO: Implement config settings
-                    Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(entry, region, true, true));
+                if (region is null)
+                {
+                    Service.PluginLog.Error("Error in manual price fetch: Home World is null");
+                    ImGui.EndPopup();
+                    return;
+                }
+                // TODO: Implement config settings
+                Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(entry, region, true, true));
             }
 
             if (ImGui.Selectable("Remove From Watchlist"))
