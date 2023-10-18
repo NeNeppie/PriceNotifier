@@ -8,10 +8,18 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace PriceNotifier;
 
-public record WatchlistEntry(Item Item, int Price, bool HQ)
+public record WatchlistEntry(Item Item, int ThresholdPrice, bool HQ)
 {
-    public int Price { get; set; } = Price; //  0xE049
-    public bool HQ { get; set; } = HQ;      //  0xE03C
+    public int ThresholdPrice { get; set; } = ThresholdPrice; //  0xE049
+    public int FetchedPrice { get; set; } = 0;
+    public bool HQ { get; set; } = HQ; //  0xE03C
+    public bool Updated { get; set; } = false;
+
+    public void Update(int price)
+    {
+        this.FetchedPrice = price;
+        this.Updated = true;
+    }
 }
 
 // TODO: Hook a "Put Item For Sale" function or "Update Price" function. Also hook "Remove Item" by the same logic

@@ -8,7 +8,7 @@ using System.Timers;
 
 namespace PriceNotifier;
 
-public class UniversalisResponse
+public class UniversalisDataMulti
 {
     public Dictionary<uint, ItemData> items { get; set; } = new();
 }
@@ -24,6 +24,8 @@ public class ItemData
         public string retainerName { get; set; } = "";
     }
 }
+
+public record MarketboardInfo(ItemData.Listing Listing, string ItemName);
 
 // TODO: Better chat printing, plus item linking. Player-made chat notification?
 public class ItemPriceFetcher : IDisposable
@@ -42,6 +44,7 @@ public class ItemPriceFetcher : IDisposable
             Service.Config.TimerInterval = value;
             if (_timer != null)
             {
+                // minutes -> milliseconds
                 var interval = value * 60000;
                 if (interval > 0)
                     _timer.Interval = interval;
@@ -56,6 +59,7 @@ public class ItemPriceFetcher : IDisposable
         if (this.Interval <= 0)
             this.Interval = 30;
 
+        // minutes -> milliseconds
         _timer = new Timer(this.Interval * 60000);
         _timer.Elapsed += this.FetchWatchlistPrices;
         _timer.AutoReset = true;
@@ -64,7 +68,6 @@ public class ItemPriceFetcher : IDisposable
 
     private void FetchWatchlistPrices(object? s, ElapsedEventArgs e)
     {
-        var taskList = new List<Task>();
         var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
         if (region is null)
         {
@@ -72,13 +75,16 @@ public class ItemPriceFetcher : IDisposable
             return;
         }
 
+        var taskList = new List<Task<List<MarketboardInfo>?>>();
+        var listings = new List<MarketboardInfo>();
+
         var queue = new Dictionary<uint, WatchlistEntry>();
         foreach (var entry in Service.ItemWatchlist.Entries)
         {
             queue[entry.Key] = entry.Value;
             if (queue.Count >= 10)
             {
-                taskList.Add(this.FetchPricesMultiAsync(queue, region, true, true));
+                taskList.Add(this.FetchPricesMultiAsync(new(queue), region, true, true));
                 queue.Clear();
             }
         }
@@ -88,10 +94,40 @@ public class ItemPriceFetcher : IDisposable
         }
 
         Task.WaitAll(taskList.ToArray());
+
+        foreach (var task in taskList)
+        {
+            if (task.Result is null) { continue; }
+            listings = listings.Concat(task.Result).ToList();
+        }
+
+        if (listings.Count > 3)
+        {
+            var chatMessage = $"[PriceNotifier] Found lower prices for {listings.Count} items. See `/pricenotifier` for more info";
+            Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+        }
+        else
+        {
+            foreach (var (itemData, itemName) in listings)
+            {
+                var chatMessage = $"[PriceNotifier] Found lower price for '{itemName}{(itemData.hq ? " \xE03C" : "")}'" +
+                              $" - {itemData.pricePerUnit}\xE049 by {itemData.retainerName}";
+                Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+            }
+        }
     }
 
-    public async Task FetchPricesMultiAsync(Dictionary<uint, WatchlistEntry> entries, string region, bool ignoreTax = false, bool sameQuality = false)
+    public async Task<List<MarketboardInfo>?> FetchPricesMultiAsync(Dictionary<uint, WatchlistEntry> entries, string region, bool ignoreTax = false, bool sameQuality = false)
     {
+        if (entries.Count == 1)
+        {
+            if (await this.FetchPricesAsync(entries.First().Value, region, ignoreTax, sameQuality) is { } data)
+            {
+                return new() { data };
+            }
+            return null;
+        }
+
         var itemIDs = string.Join(',', entries.Select(x => x.Key));
         var url = $"https://universalis.app/api/v2/{region}/{itemIDs}?noGst={ignoreTax}&fields={_universalisFieldsMulti}";
         try
@@ -101,30 +137,29 @@ public class ItemPriceFetcher : IDisposable
                 throw new HttpRequestException($"Unsuccessful status code: {response.StatusCode}", null, response.StatusCode);
 
             var responseStream = await response.Content.ReadAsStreamAsync();
-            var data = await JsonSerializer.DeserializeAsync<UniversalisResponse>(responseStream)
+            var data = await JsonSerializer.DeserializeAsync<UniversalisDataMulti>(responseStream)
                 ?? throw new HttpRequestException("Returned null response");
 
+            var listings = new List<MarketboardInfo>();
             foreach (var item in data.items)
             {
                 if (!entries.TryGetValue(item.Key, out var entry)) { continue; }
                 var itemData = item.Value;
 
-                var cheapestListing = GetCheapestListing(itemData.listings, entry, sameQuality);
-                if (cheapestListing is not null)
-                {
-                    var chatMessage = $"[PriceNotifier] Found lower price for '{entry.Item.Name}{(cheapestListing.hq ? " \xE03C" : "")}'" +
-                                      $" - {cheapestListing.pricePerUnit}\xE049 by {cheapestListing.retainerName}";
-                    Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
-                }
+                if (GetListing(itemData.listings, entry, sameQuality) is { } listing)
+                    listings.Add(new(listing, entry.Item.Name));
             }
+
+            return listings;
         }
         catch (Exception e)
         {
             Service.PluginLog.Error(e, $"Couldn't retrieve data for {entries.Count} items, region {region}");
         }
+        return null;
     }
 
-    public async Task FetchPricesAsync(WatchlistEntry entry, string region, bool ignoreTax = false, bool sameQuality = false)
+    public async Task<MarketboardInfo?> FetchPricesAsync(WatchlistEntry entry, string region, bool ignoreTax = false, bool sameQuality = false)
     {
         var url = $"https://universalis.app/api/v2/{region}/{entry.Item.RowId}?noGst={ignoreTax}&fields={_universalisFields}";
         try
@@ -137,35 +172,35 @@ public class ItemPriceFetcher : IDisposable
             var itemData = await JsonSerializer.DeserializeAsync<ItemData>(responseStream)
                 ?? throw new HttpRequestException("Returned null response");
 
-            var cheapestListing = GetCheapestListing(itemData.listings, entry, sameQuality);
-            if (cheapestListing is not null)
+            if (GetListing(itemData.listings, entry, sameQuality) is { } listing)
             {
-                var chatMessage = $"[PriceNotifier] Found lower price for '{entry.Item.Name}{(cheapestListing.hq ? " \xE03C" : "")}'" +
-                                  $" - {cheapestListing.pricePerUnit}\xE049 by {cheapestListing.retainerName}";
-                Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
+                return new(listing, entry.Item.Name.ToString());
             }
         }
         catch (Exception e)
         {
             Service.PluginLog.Error(e, $"Couldn't retrieve data for '{entry.Item.Name}' (id {entry.Item.RowId}), region {region}");
         }
+        return null;
     }
 
-    private static ItemData.Listing? GetCheapestListing(List<ItemData.Listing> listings, WatchlistEntry entry, bool sameQuality)
+    private static ItemData.Listing? GetListing(List<ItemData.Listing> listings, WatchlistEntry entry, bool sameQuality)
     {
-        ItemData.Listing? cheapestListing = null;
-        foreach (var listing in listings)
+        listings = listings.Where(listing => sameQuality && listing.hq == entry.HQ).ToList();
+
+        if (listings.Any())
         {
-            if (listing.pricePerUnit >= entry.Price && entry.Price != 0)
-                break;
-
-            if (sameQuality && listing.hq != entry.HQ)
-                continue;
-
-            if (cheapestListing is null || listing.pricePerUnit < cheapestListing.pricePerUnit)
-                cheapestListing = listing;
+            var cheapestListing = listings[0];
+            if (entry.FetchedPrice != cheapestListing.pricePerUnit)
+            {
+                entry.Update(cheapestListing.pricePerUnit);
+            }
+            if (cheapestListing.pricePerUnit < entry.ThresholdPrice || entry.ThresholdPrice == 0)
+            {
+                return cheapestListing;
+            }
         }
-        return cheapestListing;
+        return null;
     }
 
     public void ToggleTimer()

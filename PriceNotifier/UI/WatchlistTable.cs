@@ -16,9 +16,9 @@ internal static class WatchlistTable
     {
         ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
-        ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 100f); // Not consistent, but what can you do about it.
-        ImGui.TableSetupColumn("Price", ImGuiTableColumnFlags.WidthFixed, 100f);
-        ImGui.TableSetupColumn("HQ", ImGuiTableColumnFlags.WidthStretch, 100f);
+        ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthFixed, 100f); // Not consistent, but what can you do about it.
+        ImGui.TableSetupColumn("Threshold Price", ImGuiTableColumnFlags.WidthFixed, 100f);
+        ImGui.TableSetupColumn("Lowest Price", ImGuiTableColumnFlags.WidthStretch, 100f);
 
         ImGui.TableHeadersRow();
     }
@@ -35,6 +35,12 @@ internal static class WatchlistTable
             ImGui.TableNextRow();
             var value = entry.Value;
 
+            if (value.Updated)
+            {
+                var rowBgColor = ImGui.GetColorU32(new Vector4(1f, 1f, 0.5f, 0.1f));
+                ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, rowBgColor);
+            }
+
             // Icon Column
             ImGui.TableNextColumn();
             DrawIcon(value.Item, value.HQ, new Vector2(_iconSize));
@@ -43,21 +49,21 @@ internal static class WatchlistTable
             ImGui.TableNextColumn();
             ImGui.Text(value.Item.Name);
 
-            // Price Column
+            // Threshold Price Column
             ImGui.TableNextColumn();
-            var priceTag = value.Price;
+            var priceTag = value.ThresholdPrice;
             var priceInputWidth = ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("\xE049").X - ImGui.GetStyle().ItemSpacing.X;
 
             ImGui.PushItemWidth(priceInputWidth);
             if (ImGui.InputInt($"\xE049##item-watchlist-price-rename-{entry.Key}", ref priceTag, 0, 0, ImGuiInputTextFlags.EnterReturnsTrue))
             {
-                value.Price = priceTag;
+                value.ThresholdPrice = priceTag;
             }
             ImGui.PopItemWidth();
 
-            // HQ Column
+            // Lowest Price Column Column
             ImGui.TableNextColumn();
-            ImGui.Text($"{value.HQ}");
+            ImGui.Text($"{value.FetchedPrice}\xE049");
 
             // Row Popup Selectable
             ImGui.SameLine();
@@ -75,8 +81,11 @@ internal static class WatchlistTable
     {
         var openPopup = false;
         ImGui.Selectable("", false, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, ImGui.GetTextLineHeight() * 1.5f));
+        if (ImGui.IsItemHovered())
+            entry.Updated = false;
         if (ImGui.IsItemClicked())
             openPopup = true;
+
         if (openPopup)
             ImGui.OpenPopup($"##watchlist-item-popup-{id}");
 
