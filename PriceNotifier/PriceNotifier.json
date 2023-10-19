@@ -2,8 +2,12 @@
     "Author": "NeNeppie",
     "Name": "Price Notifier",
     "Punchline": "Notifies you when the price of an item you're selling changes.",
-    "Description": "Marketboard information is pulled from Universalis, and as such may not be accurate at all times.",
+    "Description": "Add/Remove items and set their threshold. Automatically inserts items sold by retainers when the list is open.\n\nNote: Marketboard information is pulled from Universalis, and may not be accurate.",
     "InternalName": "PriceNotifier",
     "ApplicableVersion": "any",
+    "RepoUrl": "https://github.com/NeNeppie/PriceNotifier",
+    "DownloadLinkInstall": null,
+    "DownloadLinkUpdate": null,
+    "DownloadLinkTesting": null,
     "Tags": []
 }
