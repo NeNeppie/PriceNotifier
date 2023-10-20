@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version tag (without prefix)
+        required: true
+
+permissions:
+  contents: write
+        
+jobs:
+  release:
+    name: create release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+        
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+
+      - name: Download Dalamud
+        run: |
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+          
+      - name: Bump Version Number
+        run: |
+          $ver = '${{ github.event.inputs.version }}'
+          $json_path = './repo.json'
+          $csproj_path = './PriceNotifier/PriceNotifier.csproj'
+          (get-content $json_path) -replace '(\d(.\d){3})', $ver | set-content $json_path
+          (get-content $csproj_path) -replace '(\d(.\d){3})', $ver | set-content $csproj_path
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -u
+          git commit -m "Version Bump ``${ver}``"
+          git push origin main
+
+      - name: Build
+        run: |
+          dotnet restore './PriceNotifier/PriceNotifier.csproj'
+          dotnet build './PriceNotifier/PriceNotifier.csproj' --no-restore --configuration Release --nologo
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./PriceNotifier/bin/Release/*
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          files: ./PriceNotifier/bin/Release/PriceNotifier/latest.zip
