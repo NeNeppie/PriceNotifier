@@ -16,4 +16,4 @@ After that, install the plugin via `/xlplugins`, as you would any other plugin.
 
 #### Repository URL
 
-`SoonTM`
+`https://raw.githubusercontent.com/NeNeppie/PriceNotifier/main/repo.json`
