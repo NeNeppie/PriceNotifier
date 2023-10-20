@@ -11,7 +11,9 @@ namespace PriceNotifier
         public int Version { get; set; } = 0;
 
         public int TimerInterval = 30;
-        public HashSet<uint> ItemIDs = new();
+        public int FetchingSpamLimit = 3;
+        public bool FetchingSameQuality = true;
+        //public HashSet<uint> ItemIDs = new();
 
         [NonSerialized]
         private DalamudPluginInterface? _pluginInterface;

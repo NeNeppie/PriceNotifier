@@ -77,6 +77,7 @@ public class ItemPriceFetcher : IDisposable
 
         var taskList = new List<Task<List<MarketboardInfo>?>>();
         var listings = new List<MarketboardInfo>();
+        var config = Service.Config;
 
         var queue = new Dictionary<uint, WatchlistEntry>();
         foreach (var entry in Service.ItemWatchlist.Entries)
@@ -84,13 +85,13 @@ public class ItemPriceFetcher : IDisposable
             queue[entry.Key] = entry.Value;
             if (queue.Count >= 10)
             {
-                taskList.Add(this.FetchPricesMultiAsync(new(queue), region, true, true));
+                taskList.Add(this.FetchPricesMultiAsync(new(queue), region, true, config.FetchingSameQuality));
                 queue.Clear();
             }
         }
         if (queue.Any())
         {
-            taskList.Add(this.FetchPricesMultiAsync(queue, region, true, true));
+            taskList.Add(this.FetchPricesMultiAsync(queue, region, true, config.FetchingSameQuality));
         }
 
         Task.WaitAll(taskList.ToArray());
@@ -101,7 +102,7 @@ public class ItemPriceFetcher : IDisposable
             listings = listings.Concat(task.Result).ToList();
         }
 
-        if (listings.Count > 3)
+        if (listings.Count > config.FetchingSpamLimit)
         {
             var chatMessage = $"[PriceNotifier] Found lower prices for {listings.Count} items. See `/pricenotifier` for more info";
             Service.ChatGui.Print(new() { Message = chatMessage, Type = Dalamud.Game.Text.XivChatType.Echo });
@@ -186,7 +187,8 @@ public class ItemPriceFetcher : IDisposable
 
     private static ItemData.Listing? GetListing(List<ItemData.Listing> listings, WatchlistEntry entry, bool sameQuality)
     {
-        listings = listings.Where(listing => sameQuality && listing.hq == entry.HQ).ToList();
+        if (sameQuality)
+            listings = listings.Where(listing => listing.hq == entry.HQ).ToList();
 
         if (listings.Any())
         {

@@ -100,8 +100,8 @@ internal static class WatchlistTable
                     ImGui.EndPopup();
                     return;
                 }
-                // TODO: Implement config settings
-                Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(entry, region, true, true));
+
+                Task.Run(() => Service.ItemPriceFetcher.FetchPricesAsync(entry, region, true, Service.Config.FetchingSameQuality));
             }
 
             if (ImGui.Selectable("Remove From Watchlist"))

@@ -64,5 +64,14 @@ public class ConfigWindow : Window
         ImGui.SliderInt("Minutes##config-interval", ref _intervalMinutes, 5, 120, null, ImGuiSliderFlags.NoInput);
         if (Service.ItemPriceFetcher.Interval != _intervalMinutes)
             Service.ItemPriceFetcher.Interval = _intervalMinutes;
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        ImGui.Checkbox("Only fetch items with the same quality", ref Service.Config.FetchingSameQuality);
+
+        ImGui.TextWrapped("Send individual notifications per item when below...");
+        ImGui.SliderInt("Notifications##config-spam", ref Service.Config.FetchingSpamLimit, 1, 10);
     }
 }
