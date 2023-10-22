@@ -12,6 +12,6 @@
         "DownloadLinkInstall": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
         "DownloadLinkTesting": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
         "DownloadLinkUpdate": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
-        "IconUrl": null
+        "IconUrl": "https://raw.githubusercontent.com/NeNeppie/PriceNotifier/main/Images/icon.png"
     }
 ]
