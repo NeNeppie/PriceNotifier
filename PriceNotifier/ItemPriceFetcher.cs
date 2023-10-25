@@ -188,7 +188,7 @@ public class ItemPriceFetcher : IDisposable
     private static ItemData.Listing? GetListing(List<ItemData.Listing> listings, WatchlistEntry entry, bool sameQuality)
     {
         if (sameQuality)
-            listings = listings.Where(listing => listing.hq == entry.HQ).ToList();
+            listings = listings.Where(listing => listing.hq == entry.Flags.HasFlag(ItemWatchlistFlags.HighQuality)).ToList();
 
         if (listings.Any())
         {

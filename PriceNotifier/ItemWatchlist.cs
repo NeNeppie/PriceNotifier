@@ -8,11 +8,11 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace PriceNotifier;
 
-public record WatchlistEntry(Item Item, int ThresholdPrice, bool HQ)
+public record WatchlistEntry(Item Item, int ThresholdPrice, ItemWatchlistFlags Flags)
 {
     public int ThresholdPrice { get; set; } = ThresholdPrice; //  0xE049
     public int FetchedPrice { get; set; } = 0;
-    public bool HQ { get; set; } = HQ; //  0xE03C
+    public ItemWatchlistFlags Flags { get; set; } = Flags;
     public bool Updated { get; set; } = false;
 
     public void Update(int price)
@@ -50,6 +50,7 @@ public class ItemWatchlist
             var itemIcon = addon->AtkValues[atkIndex].Int;
             var itemName = MemoryHelper.ReadSeStringNullTerminated((nint)addon->AtkValues[atkIndex + 1].String).TextValue;
             var itemPrice = ParseItemPrice(MemoryHelper.ReadSeStringNullTerminated((nint)addon->AtkValues[atkIndex + 3].String).TextValue);
+            var itemFlags = ItemWatchlistFlags.Retainer;
             var isHQ = itemIcon > 1000000;
 
             // HQ Check. Collectables are 500,000.
@@ -57,13 +58,14 @@ public class ItemWatchlist
             {
                 itemName = itemName.Remove(itemName.Length - 2);
                 itemIcon -= 1000000;
+                itemFlags |= ItemWatchlistFlags.HighQuality;
             }
 
             var item = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).FirstOrDefault();
             if (item is null) { continue; }
 
             if (!this.Entries.TryGetValue(item.RowId, out _))
-                this.Entries.Add(item.RowId, new(item, itemPrice, isHQ));
+                this.Entries.Add(item.RowId, new(item, itemPrice, itemFlags));
         }
     }
 

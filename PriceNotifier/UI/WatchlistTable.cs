@@ -16,9 +16,10 @@ internal static class WatchlistTable
     {
         ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
-        ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthFixed, 100f); // Not consistent, but what can you do about it.
+        ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 100f); // Not consistent, but what can you do about it.
         ImGui.TableSetupColumn("Threshold Price", ImGuiTableColumnFlags.WidthFixed, 100f);
-        ImGui.TableSetupColumn("Lowest Price", ImGuiTableColumnFlags.WidthStretch, 100f);
+        ImGui.TableSetupColumn("Lowest Price", ImGuiTableColumnFlags.WidthFixed, 100f);
+        ImGui.TableSetupColumn("##Flags", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize * 2f);
 
         ImGui.TableHeadersRow();
     }
@@ -26,7 +27,7 @@ internal static class WatchlistTable
     // TODO: Optimize draw time
     public static void DrawTable()
     {
-        if (!ImGui.BeginTable("##item-watchlist-table", 4, _tableFlags, ImGui.GetContentRegionAvail())) { return; }
+        if (!ImGui.BeginTable("##item-watchlist-table", 5, _tableFlags, ImGui.GetContentRegionAvail())) { return; }
 
         DrawTableHeader();
 
@@ -43,7 +44,7 @@ internal static class WatchlistTable
 
             // Icon Column
             ImGui.TableNextColumn();
-            DrawIcon(value.Item, value.HQ, new Vector2(_iconSize));
+            DrawIcon(value.Item, value.Flags.HasFlag(ItemWatchlistFlags.HighQuality), new Vector2(_iconSize));
 
             // Name Column
             ImGui.TableNextColumn();
@@ -64,6 +65,10 @@ internal static class WatchlistTable
             // Lowest Price Column Column
             ImGui.TableNextColumn();
             ImGui.Text($"{value.FetchedPrice}\xE049");
+
+            // Flags Column
+            ImGui.TableNextColumn();
+            value.Flags.DrawFlags();
 
             // Row Popup Selectable
             ImGui.SameLine();
@@ -91,6 +96,10 @@ internal static class WatchlistTable
 
         if (ImGui.BeginPopup($"##watchlist-item-popup-{id}"))
         {
+            ImGui.Text(entry.Item.Name);
+            ImGui.Separator();
+            ImGui.Spacing();
+
             if (ImGui.Selectable("Fetch Price"))
             {
                 var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();

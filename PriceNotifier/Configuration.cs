@@ -15,7 +15,7 @@ namespace PriceNotifier
         public int TimerInterval = 30;
         public int FetchingSpamLimit = 3;
         public bool FetchingSameQuality = true;
-        public Dictionary<uint, (int, int, bool)> WatchlistData = new();
+        public Dictionary<uint, (int, int, uint)> WatchlistData = new();
 
         [NonSerialized]
         private DalamudPluginInterface? _pluginInterface;
@@ -27,11 +27,11 @@ namespace PriceNotifier
             var items = Service.DataManager.GetExcelSheet<Item>()!.ToList();
             foreach (var watchlistItem in this.WatchlistData)
             {
-                var (itemThreshPrice, itemFetchedPrice, itemHQ) = watchlistItem.Value;
+                var (itemThreshPrice, itemFetchedPrice, itemFlags) = watchlistItem.Value;
                 var item = items.Where(item => item.RowId == watchlistItem.Key).FirstOrDefault();
                 if (item is not null)
                 {
-                    Service.ItemWatchlist.Entries[watchlistItem.Key] = new(item, itemThreshPrice, itemHQ);
+                    Service.ItemWatchlist.Entries[watchlistItem.Key] = new(item, itemThreshPrice, (ItemWatchlistFlags)itemFlags);
                     Service.ItemWatchlist.Entries[watchlistItem.Key].FetchedPrice = itemFetchedPrice;
                 }
             }
@@ -43,7 +43,7 @@ namespace PriceNotifier
             foreach (var entry in Service.ItemWatchlist.Entries)
             {
                 var entryData = entry.Value;
-                this.WatchlistData[entry.Key] = (entryData.ThresholdPrice, entryData.FetchedPrice, entryData.HQ);
+                this.WatchlistData[entry.Key] = (entryData.ThresholdPrice, entryData.FetchedPrice, (uint)entryData.Flags);
             }
 
             _pluginInterface!.SavePluginConfig(this);

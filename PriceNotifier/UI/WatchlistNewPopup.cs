@@ -40,7 +40,7 @@ public static class WatchlistNewPopup
                         {
                             lock (Service.ItemWatchlist)
                             {
-                                Service.ItemWatchlist.Entries.Add(item.RowId, new(item, 0, false));
+                                Service.ItemWatchlist.Entries.Add(item.RowId, new(item, 0, ItemWatchlistFlags.None));
                             }
                         }
                     }
