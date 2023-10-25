@@ -21,17 +21,18 @@ internal sealed class Service
 
     public static void Initialize(DalamudPluginInterface pi)
     {
+        ItemWatchlist = new();
+
         Config = (Configuration?)pi.GetPluginConfig() ?? new Configuration();
         Config.Initialize(pi);
 
-        ItemWatchlist = new();
         ItemPriceFetcher = new();
     }
 
     public static void Dispose()
     {
         ItemPriceFetcher.Dispose();
-        ItemWatchlist.Dispose();
         Config.Save();
+        ItemWatchlist.Dispose();
     }
 }

@@ -59,10 +59,9 @@ public class ItemWatchlist
                 itemIcon -= 1000000;
             }
 
-            var itemList = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).ToList();
-            if (!itemList.Any()) { continue; }
+            var item = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).FirstOrDefault();
+            if (item is null) { continue; }
 
-            var item = itemList[0]; // First match
             if (!this.Entries.TryGetValue(item.RowId, out _))
                 this.Entries.Add(item.RowId, new(item, itemPrice, isHQ));
         }
