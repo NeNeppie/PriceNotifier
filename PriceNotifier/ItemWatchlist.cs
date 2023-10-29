@@ -69,6 +69,11 @@ public class ItemWatchlist
         }
     }
 
+    public void Clear()
+    {
+        this.Entries.Clear();
+    }
+
     public void Dispose()
     {
         Service.AddonLifecycle.UnregisterListener(AddonEvent.PostSetup, "RetainerSellList", this.GetRetainerSellList);

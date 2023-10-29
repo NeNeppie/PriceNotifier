@@ -15,6 +15,22 @@ public static class GuiUtilities
 
     private static readonly Dictionary<string, IDalamudTextureWrap?> _imageCache = new();
 
+    public static bool ColoredButton(string label, Vector4 color, Vector2 size = default, string? tooltip = null)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Button, color);
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, color * new Vector4(1f, 1f, 1f, 1.2f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, color * new Vector4(1f, 1f, 1f, 1.5f));
+
+        var res = ImGui.Button(label, size);
+        if (tooltip != null && ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(tooltip);
+        }
+
+        ImGui.PopStyleColor(3);
+        return res;
+    }
+
     public static bool IconButton(FontAwesomeIcon icon, Vector2 size = default, string? tooltip = null)
     {
         var label = icon.ToIconString();

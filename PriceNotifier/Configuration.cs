@@ -15,6 +15,7 @@ namespace PriceNotifier
         public int TimerInterval = 30;
         public int FetchingSpamLimit = 3;
         public bool FetchingSameQuality = true;
+        public bool ClearFlashOnHover = false;
         public Dictionary<uint, (int, int, uint)> WatchlistData = new();
 
         [NonSerialized]

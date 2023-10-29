@@ -85,10 +85,15 @@ internal static class WatchlistTable
     {
         var openPopup = false;
         ImGui.Selectable("", false, ImGuiSelectableFlags.SpanAllColumns, new Vector2(0, ImGui.GetTextLineHeight() * 1.5f));
-        if (ImGui.IsItemHovered())
+        if (ImGui.IsItemHovered() && Service.Config.ClearFlashOnHover)
+        {
             entry.Updated = false;
+        }
         if (ImGui.IsItemClicked())
+        {
             openPopup = true;
+            entry.Updated = false;
+        }
 
         if (openPopup)
             ImGui.OpenPopup($"##watchlist-item-popup-{id}");

@@ -73,5 +73,21 @@ public class ConfigWindow : Window
 
         ImGui.TextWrapped("Send individual notifications per item when below...");
         ImGui.SliderInt("Notifications##config-spam", ref Service.Config.FetchingSpamLimit, 1, 10);
+
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Spacing();
+
+        ImGui.Checkbox("Clear update flash by hovering", ref Service.Config.ClearFlashOnHover);
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("When off, clicking the item clears the flash");
+        }
+
+        ImGui.SetCursorPosY(ImGui.GetContentRegionAvail().Y + ImGui.GetCursorPosY() - ImGui.GetTextLineHeightWithSpacing());
+        if (GuiUtilities.ColoredButton("Clear Watchlist", new Vector4(0.78f, 0.33f, 0.33f, 0.7f)))
+        {
+            Service.ItemWatchlist.Clear();
+        }
     }
 }
