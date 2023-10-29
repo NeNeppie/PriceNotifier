@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using ImGuiNET;
+
+using PriceNotifier.UI;
 
 namespace PriceNotifier;
 
@@ -16,38 +19,79 @@ public enum ItemWatchlistFlags
 
 internal static class ItemWatchlistFlagsEx
 {
-    public static Dictionary<ItemWatchlistFlags, Action> NoName = new()
+    public static int Count => Enum.GetNames<ItemWatchlistFlags>().Length - 1;
+
+    public static Dictionary<ItemWatchlistFlags, Predicate<bool>> FlagDrawFuncs = new()
     {
         { ItemWatchlistFlags.Retainer, DrawRetainerFlag },
         { ItemWatchlistFlags.HighQuality, DrawHighQualityFlag },
         { ItemWatchlistFlags.DisableFetching, DrawDisableFetchingFlag }
     };
 
-    public static void DrawFlags(this ItemWatchlistFlags flags)
+    private static readonly ushort _retainerIconId = 060425;
+    private static readonly ushort _disableFetchingIconId = 063938;
+
+    public static ItemWatchlistFlags DrawFlags(this ItemWatchlistFlags flags)
     {
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0f));
         foreach (var value in Enum.GetValues<ItemWatchlistFlags>())
         {
             if (value is ItemWatchlistFlags.None) { continue; }
 
-            if (flags.HasFlag(value))
-                NoName[value]();
+            bool active = flags.HasFlag(value);
+            if (FlagDrawFuncs[value](active))
+            {
+                flags ^= value;
+            }
             ImGui.SameLine();
         }
         ImGui.Text("");
+        ImGui.PopStyleVar();
+
+        return flags;
     }
 
-    private static void DrawRetainerFlag()
+    private static bool DrawRetainerFlag(bool active)
     {
-        ImGui.Text("R");
+        GuiUtilities.DrawFlagIcon(_retainerIconId, active, new Vector2(GuiUtilities.FlagIconSize));
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("This item is sold by your retainer");
+        }
+
+        return false;
     }
 
-    private static void DrawHighQualityFlag()
+    private static bool DrawHighQualityFlag(bool active)
     {
-        ImGui.Text("H");
+        GuiUtilities.DrawFlagIcon("HighQualityFlagIcon", active, new Vector2(GuiUtilities.FlagIconSize));
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Toggle High Quality status");
+        }
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        {
+            return true;
+        }
+        return false;
     }
 
-    private static void DrawDisableFetchingFlag()
+    private static bool DrawDisableFetchingFlag(bool active)
     {
-        ImGui.Text("D");
+        GuiUtilities.DrawFlagIcon(_disableFetchingIconId, active, new Vector2(GuiUtilities.FlagIconSize));
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip("Toggle automatic fetching for this item.\nActive means disabled");
+        }
+
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        {
+            return true;
+        }
+        return false;
     }
 }

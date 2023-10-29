@@ -1,25 +1,24 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Dalamud.Interface;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 
 namespace PriceNotifier.UI;
 
 internal static class WatchlistTable
 {
     private static readonly ImGuiTableFlags _tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.ScrollY | ImGuiTableFlags.RowBg;
-    private static float _iconSize => (ImGui.GetTextLineHeight() * 1.5f) + ImGui.GetStyle().ItemSpacing.Y;
 
     private static void DrawTableHeader()
     {
         ImGui.TableSetupScrollFreeze(0, 1);
-        ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize);
+        ImGui.TableSetupColumn("##Icon", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, GuiUtilities.ItemIconSize);
         ImGui.TableSetupColumn("Item Name", ImGuiTableColumnFlags.WidthStretch, 100f); // Not consistent, but what can you do about it.
         ImGui.TableSetupColumn("Threshold Price", ImGuiTableColumnFlags.WidthFixed, 100f);
         ImGui.TableSetupColumn("Lowest Price", ImGuiTableColumnFlags.WidthFixed, 100f);
-        ImGui.TableSetupColumn("##Flags", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, _iconSize * 2f);
+        ImGui.TableSetupColumn("##Flags", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize, GuiUtilities.FlagIconSize * ItemWatchlistFlagsEx.Count);
 
         ImGui.TableHeadersRow();
     }
@@ -44,7 +43,7 @@ internal static class WatchlistTable
 
             // Icon Column
             ImGui.TableNextColumn();
-            DrawIcon(value.Item, value.Flags.HasFlag(ItemWatchlistFlags.HighQuality), new Vector2(_iconSize));
+            GuiUtilities.DrawItemIcon(value.Item, value.Flags.HasFlag(ItemWatchlistFlags.HighQuality), new Vector2(GuiUtilities.ItemIconSize));
 
             // Name Column
             ImGui.TableNextColumn();
@@ -68,7 +67,7 @@ internal static class WatchlistTable
 
             // Flags Column
             ImGui.TableNextColumn();
-            value.Flags.DrawFlags();
+            value.Flags = value.Flags.DrawFlags();
 
             // Row Popup Selectable
             ImGui.SameLine();
@@ -130,41 +129,11 @@ internal static class WatchlistTable
         var openPopup = false;
         var popupLabel = "##watchlist-new-popup";
 
-        if (IconButton(FontAwesomeIcon.Plus, new Vector2(_iconSize), "Add items"))
+        if (GuiUtilities.IconButton(FontAwesomeIcon.Plus, new Vector2(GuiUtilities.ItemIconSize), "Add items"))
             openPopup = true;
         if (openPopup)
             ImGui.OpenPopup(popupLabel);
 
         WatchlistNewPopup.Draw(popupLabel);
-    }
-
-    public static bool IconButton(FontAwesomeIcon icon, Vector2 size = default, string? tooltip = null)
-    {
-        var label = icon.ToIconString();
-
-        ImGui.PushFont(UiBuilder.IconFont);
-        var res = ImGui.Button(label, size);
-        ImGui.PopFont();
-
-        if (tooltip != null && ImGui.IsItemHovered())
-        {
-            ImGui.SetTooltip(tooltip);
-        }
-
-        return res;
-    }
-
-    public static void DrawIcon(Item item, bool isHQ, Vector2 size)
-    {
-        var iconFlags = Dalamud.Plugin.Services.ITextureProvider.IconFlags.HiRes;
-        if (isHQ)
-            iconFlags |= Dalamud.Plugin.Services.ITextureProvider.IconFlags.ItemHighQuality;
-
-        var icon = Service.TextureProvider.GetIcon(item.Icon, iconFlags);
-        if (icon is not null)
-        {
-            ImGui.Image(icon.ImGuiHandle, size);
-            ImGui.SameLine();
-        }
     }
 }

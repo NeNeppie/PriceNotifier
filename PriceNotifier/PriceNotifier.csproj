@@ -27,6 +27,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ContentWithTargetPath Include="UI\Icons\HighQualityFlagIcon.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>Images\HighQualityFlagIcon.png</TargetPath>
+        </ContentWithTargetPath>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="DalamudPackager" Version="2.1.12" />
         <Reference Include="FFXIVClientStructs">
             <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>

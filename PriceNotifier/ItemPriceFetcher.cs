@@ -82,6 +82,8 @@ public class ItemPriceFetcher : IDisposable
         var queue = new Dictionary<uint, WatchlistEntry>();
         foreach (var entry in Service.ItemWatchlist.Entries)
         {
+            if (entry.Value.Flags.HasFlag(ItemWatchlistFlags.DisableFetching)) { continue; }
+
             queue[entry.Key] = entry.Value;
             if (queue.Count >= 10)
             {
