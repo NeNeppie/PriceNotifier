@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 
@@ -59,6 +60,13 @@ public class ConfigWindow : Window
             Service.ItemPriceFetcher.ToggleTimer();
 
         ImGui.PopStyleColor();
+
+        var label = "Fetch All";
+        ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(label).X);
+        if (ImGui.SmallButton(label))
+        {
+            Task.Run(Service.ItemPriceFetcher.FetchWatchlistPrices);
+        }
 
         ImGui.Text("Timer interval:");
         ImGui.SliderInt("Minutes##config-interval", ref _intervalMinutes, 5, 120, null, ImGuiSliderFlags.NoInput);

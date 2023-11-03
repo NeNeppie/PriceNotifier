@@ -66,7 +66,7 @@ public class ItemPriceFetcher : IDisposable
         _timer.Start();
     }
 
-    private void FetchWatchlistPrices(object? s, ElapsedEventArgs e)
+    public void FetchWatchlistPrices()
     {
         var region = Service.ClientState.LocalPlayer?.HomeWorld.GameData?.RowId.ToString();
         if (region is null)
@@ -119,6 +119,8 @@ public class ItemPriceFetcher : IDisposable
             }
         }
     }
+
+    private void FetchWatchlistPrices(object? s, ElapsedEventArgs e) => this.FetchWatchlistPrices();
 
     public async Task<List<MarketboardInfo>?> FetchPricesMultiAsync(Dictionary<uint, WatchlistEntry> entries, string region, bool ignoreTax = false, bool sameQuality = false)
     {
