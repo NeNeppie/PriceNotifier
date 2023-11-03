@@ -64,6 +64,8 @@ public class ItemPriceFetcher : IDisposable
         _timer.Elapsed += this.FetchWatchlistPrices;
         _timer.AutoReset = true;
         _timer.Start();
+
+        Service.ClientState.Login += this.FetchWatchlistPrices;
     }
 
     public void FetchWatchlistPrices()
@@ -220,6 +222,8 @@ public class ItemPriceFetcher : IDisposable
 
     public void Dispose()
     {
+        Service.ClientState.Login -= this.FetchWatchlistPrices;
+
         if (_timer != null)
         {
             _timer.Stop();
