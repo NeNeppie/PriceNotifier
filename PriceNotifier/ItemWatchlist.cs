@@ -64,8 +64,15 @@ public class ItemWatchlist
             var item = items.Where(item => item.Icon == itemIcon && item.Name.RawString == itemName).FirstOrDefault();
             if (item is null) { continue; }
 
-            if (!this.Entries.TryGetValue(item.RowId, out _))
+            if (!this.Entries.TryGetValue(item.RowId, out var entry))
+            {
                 this.Entries.Add(item.RowId, new(item, itemPrice, itemFlags));
+            }
+            else
+            {
+                if (entry.Flags.HasFlag(ItemWatchlistFlags.Retainer))
+                    entry.ThresholdPrice = itemPrice;
+            }
         }
     }
 

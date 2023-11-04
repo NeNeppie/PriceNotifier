@@ -57,7 +57,7 @@ internal static class ItemWatchlistFlagsEx
 
         if (ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip("This item is sold by your retainer");
+            ImGui.SetTooltip("Item is sold by your retainer.\nYou'll need to re-open the sales window to update prices");
         }
 
         return false;
