@@ -10,6 +10,8 @@ public class ConfigWindow : Window
     private static readonly ImGuiWindowFlags _windowFlags = ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     private int _intervalMinutes = Service.Config.TimerInterval;
 
+    private bool _clearConfirm = false;
+
     public ConfigWindow() : base("Price Notifier", _windowFlags)
     {
         this.IsOpen = true; // DEBUG:
@@ -93,9 +95,35 @@ public class ConfigWindow : Window
         }
 
         ImGui.SetCursorPosY(ImGui.GetContentRegionAvail().Y + ImGui.GetCursorPosY() - ImGui.GetTextLineHeightWithSpacing());
-        if (GuiUtilities.ColoredButton("Clear Watchlist", new Vector4(0.78f, 0.33f, 0.33f, 0.7f)))
+        this.DrawClearButton();
+    }
+
+    private void DrawClearButton()
+    {
+        GuiUtilities.ColoredButton("Clear Watchlist", new Vector4(0.78f, 0.33f, 0.33f, 0.7f));
+        if (ImGui.IsItemHovered())
         {
-            Service.ItemWatchlist.Clear();
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            {
+                if (_clearConfirm)
+                {
+                    _clearConfirm = false;
+                    Service.ItemWatchlist.Clear();
+                }
+                else
+                {
+                    _clearConfirm = true;
+                }
+            }
+        }
+        else
+        {
+            _clearConfirm = false;
+        }
+
+        if (_clearConfirm)
+        {
+            ImGui.SetTooltip("Are you sure? Click again to confirm.");
         }
     }
 }
