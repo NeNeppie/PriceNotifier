@@ -6,5 +6,6 @@
     "InternalName": "PriceNotifier",
     "ApplicableVersion": "any",
     "RepoUrl": "https://github.com/NeNeppie/PriceNotifier",
+    "IconUrl": "https://raw.githubusercontent.com/NeNeppie/PriceNotifier/main/Images/icon.png",
     "Tags": []
 }
