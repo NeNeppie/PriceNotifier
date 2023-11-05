@@ -8,7 +8,7 @@
         "ApplicableVersion": "any",
         "DalamudApiLevel": 9,
         "RepoUrl": "https://github.com/NeNeppie/PriceNotifier",
-        "AssemblyVersion": "0.1.2.0",
+        "AssemblyVersion": "0.1.2.1",
         "DownloadLinkInstall": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
         "DownloadLinkTesting": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
         "DownloadLinkUpdate": "https://github.com/NeNeppie/PriceNotifier/releases/latest/download/latest.zip",
